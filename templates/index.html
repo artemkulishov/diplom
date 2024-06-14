@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Информация по матчу</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <style>
+        .event-item {
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .event-details {
+            display: none;
+            padding: 10px;
+            border-left: 2px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile">
+        <span>ПРОФИЛЬ: редактор</span>
+        <img src="../static/profile.jpg" alt="Profile" width="40" height="40">
+        <a href="/logout">Выйти</a>
+    </div>
+    <div class="container">
+        <div class="left">
+            <h2>ИНФОРМАЦИЯ О МАТЧЕ</h2>
+            <form id="matchForm" action="/add_match" method="POST">
+                <div>
+                    <label for="location_id">Место:</label>
+                    <select id="location_id" name="location_id" required></select>
+                </div>
+                <div>
+                    <label for="home_team_id">Команда дома:</label>
+                    <select id="home_team_id" name="home_team_id" required></select>
+                </div>
+                <div>
+                    <label for="away_team_id">Команда в гостях:</label>
+                    <select id="away_team_id" name="away_team_id" required></select>
+                </div>
+                <div>
+                    <label for="match_date">Дата матча:</label>
+                    <input type="date" id="match_date" name="match_date" required>
+                </div>
+                <div>
+                    <label for="match_time">Время матча:</label>
+                    <input type="time" id="match_time" name="match_time" required>
+                </div>
+                <div>
+                    <label for="broadcast_key">Ключ трансляции:</label>
+                    <input type="text" id="broadcast_key" name="broadcast_key" required>
+                </div>
+                <div>
+                    <label for="customer_id">Клиент:</label>
+                    <select id="customer_id" name="customer_id" required></select>
+                </div>
+                <div>
+                    <label for="operator_id">Оператор:</label>
+                    <select id="operator_id" name="operator_id"></select>
+                </div>
+                <div>
+                    <label for="director_id">Режиссёр:</label>
+                    <select id="director_id" name="director_id"></select>
+                </div>
+                <div>
+                    <label for="commentator_id">Комментатор:</label>
+                    <select id="commentator_id" name="commentator_id"></select>
+                </div>
+                <div>
+                    <label for="photograph_id">Фотограф:</label>
+                    <select id="photograph_id" name="photograph_id"></select>
+                </div>
+                <div>
+                    <label for="employee1_id">Дополнительный сотрудник 1:</label>
+                    <select id="employee1_id" name="employee1_id"></select>
+                </div>
+                <div>
+                    <label for="employee2_id">Дополнительный сотрудник 2:</label>
+                    <select id="employee2_id" name="employee2_id"></select>
+                </div>
+                <div>
+                    <label for="employee3_id">Дополнительный сотрудник 3:</label>
+                    <select id="employee3_id" name="employee3_id"></select>
+                </div>
+                <div>
+                    <label for="comment">Комментарий:</label>
+                    <textarea id="comment" name="comment"></textarea>
+                </div>
+                <div class="buttons">
+                    <button type="submit">Сохранить</button>
+                    <button type="button" onclick="deleteEvent()">Удалить</button>
+                </div>
+            </form>
+        </div>
+        <div class="right">
+            <h2>Список мероприятий</h2>
+            <div id="eventsList"></div>
+        </div>
+    </div>
+    <script>
+        function fetchOptions(endpoint, selectElementId) {
+            fetch(endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    const selectElement = document.getElementById(selectElementId);
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.name;
+                        selectElement.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('matchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(event.target);
+            var data = {};
+            formData.forEach((value, key) => data[key] = value);
+            fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                fetchEvents();  // Обновление списка мероприятий после сохранения
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function deleteEvent() {
+            var event_id = prompt("Введите ID мероприятия для удаления:");
+            if (event_id) {
+                fetch('/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: event_id })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    fetchEvents();  // Обновление списка мероприятий после удаления
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function fetchEvents() {
+            fetch('/view')
+                .then(response => response.json())
+                .then(data => {
+                    var eventsList = document.getElementById('eventsList');
+                    eventsList.innerHTML = ''; // Очистить предыдущий список
+                    data.forEach(event => {
+                        var eventItem = document.createElement('div');
+                        eventItem.className = 'event-item';
+                        eventItem.textContent = 'Мероприятие ID: ' + event.event_id;
+                        eventItem.onclick = function() {
+                            var details = this.nextElementSibling;
+                            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+                        };
+                        eventsList.appendChild(eventItem);
+
+                        var eventDetails = document.createElement('div');
+                        eventDetails.className = 'event-details';
+                        eventDetails.innerHTML = `
+                            <p>Дата: ${event.match_date}</p>
+                            <p>Время: ${event.match_time}</p>
+                            <p>Место: ${event.location_name}</p>
+                            <p>Команда дома: ${event.home_team_name}</p>
+                            <p>Команда в гостях: ${event.away_team_name}</p>
+                            <p>Ключ трансляции: ${event.broadcast_key}</p>
+                            <p>Клиент: ${event.customer_name}</p>
+                            <p>Комментарий: ${event.comment}</p>
+                            <p>Оператор: ${event.operator_name}</p>
+                            <p>Режиссёр: ${event.director_name}</p>
+                            <p>Комментатор: ${event.commentator_name}</p>
+                            <p>Фотограф: ${event.photograph_name}</p>
+                            <p>Дополнительный сотрудник 1: ${event.employee1_name}</p>
+                            <p>Дополнительный сотрудник 2: ${event.employee2_name}</p>
+                            <p>Дополнительный сотрудник 3: ${event.employee3_name}</p>
+                        `;
+                        eventsList.appendChild(eventDetails);
+                    });
+                });
+        }
+
+        fetchOptions('/locations', 'location_id');
+        fetchOptions('/teams', 'home_team_id');
+        fetchOptions('/teams', 'away_team_id');
+        fetchOptions('/customers', 'customer_id');
+        fetchOptions('/staff', 'operator_id');
+        fetchOptions('/staff', 'director_id');
+        fetchOptions('/staff', 'commentator_id');
+        fetchOptions('/staff', 'photograph_id');
+        fetchOptions('/staff', 'employee1_id');
+        fetchOptions('/staff', 'employee2_id');
+        fetchOptions('/staff', 'employee3_id');
+        
+        fetchEvents();
+    </script>
+</body>
+</html>

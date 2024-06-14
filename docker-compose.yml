@@ -1,0 +1,29 @@
+services:
+  db:
+    build:
+      context: mysql-diplom
+
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: P@$$w0rd
+      MYSQL_DATABASE: match_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: P@$$w0rd
+
+    # ports:
+    #   - "3306:3306"
+    # volumes:
+    #   - ./mysql-data:/var/lib/mysql
+# artem-diplom.demb.uk
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile-web
+
+    restart: unless-stopped
+
+  tgbot:
+    build:
+      context: .
+      dockerfile: Dockerfile-tgbot
+
